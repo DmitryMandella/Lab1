@@ -1,7 +1,748 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Віртуальна лабораторія - Дослідження характеристик електропривода з ШІП</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .lab-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+
+        .value-display {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2980b9;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .oscilloscope {
+            background: #1a1a1a;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .oscilloscope canvas {
+            width: 100%;
+            background: #000;
+            border-radius: 5px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-card h3 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .result-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .result-card .unit {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-table th, .data-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            background: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-on { background: #27ae60; }
+        .status-off { background: #e74c3c; }
+
+        .formula-box {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .animated { animation: pulse 2s infinite; }
+    </style>
+</head>
 <body>
-<h1>Hello World</h1>
-<p>I'm hosted with GitHub Pages.</p>
+    <div class="container">
+        <div class="header">
+            <h1>🔬 Віртуальна лабораторія</h1>
+            <p>Дослідження характеристик електропривода з широтно-імпульсним перетворювачем (ШІП)</p>
+        </div>
+
+        <!-- Теоретична частина -->
+        <div class="lab-section">
+            <h2 class="section-title">📚 Теоретичні основи</h2>
+            <p style="font-size: 1.1em; line-height: 1.6; margin-bottom: 20px;">
+                Широтно-імпульсний перетворювач (ШІП) регулює напругу на навантаженні шляхом зміни 
+                <strong>шпаруватості (γ)</strong> імпульсів напруги. Основні переваги: плавне регулювання 
+                швидкості, високий ккд, висока швидкодія, можливість рекуперації.
+            </p>
+            
+            <div class="formula-box">
+                <strong>Основні формули:</strong><br>
+                • Швидкісна характеристика: ω = (γ·Uп - Iя·Rя) / (kпз·Iя + kзал)<br>
+                • Механічна характеристика: ω = (γ·Uп) / kпз - (Rя·M) / kпз² - kзал/kпз<br>
+                • Шпаруватість: γ = tімп / T
+            </div>
+        </div>
+
+        <!-- Віртуальна установка -->
+        <div class="lab-section">
+            <h2 class="section-title">⚡ Віртуальна лабораторна установка</h2>
+            
+            <div class="controls-grid">
+                <div class="control-panel">
+                    <h3>🎛️ Панель керування</h3>
+                    <div class="control-group">
+                        <label>Напруга живлення Uп (В):</label>
+                        <input type="range" id="voltage" min="100" max="400" value="220" step="10">
+                        <div class="value-display" id="voltageValue">220 В</div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Шпаруватість γ (%):</label>
+                        <input type="range" id="dutyCycle" min="10" max="100" value="50" step="5">
+                        <div class="value-display" id="dutyCycleValue">50%</div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Частота комутації f (кГц):</label>
+                        <input type="range" id="frequency" min="1" max="10" value="5" step="0.5">
+                        <div class="value-display" id="frequencyValue">5 кГц</div>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Момент навантаження M (Н·м):</label>
+                        <input type="range" id="load" min="0" max="50" value="10" step="2">
+                        <div class="value-display" id="loadValue">10 Н·м</div>
+                    </div>
+                </div>
+
+                <div class="control-panel">
+                    <h3>📊 Стан системи</h3>
+                    <p><span class="status-indicator status-on"></span>Система увімкнена</p>
+                    <p><span class="status-indicator status-on"></span>ШІП активний</p>
+                    <p><span class="status-indicator status-on"></span>Двигун працює</p>
+                    
+                    <div style="margin-top: 20px;">
+                        <button class="btn" onclick="startExperiment()">▶️ Старт експерименту</button>
+                        <button class="btn" onclick="resetData()">🔄 Скинути дані</button>
+                        <button class="btn" onclick="saveData()">💾 Зберегти дані</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Осцилограф -->
+        <div class="lab-section">
+            <h2 class="section-title">📺 Осцилограф - Форма вихідної напруги ШІП</h2>
+            <div class="oscilloscope">
+                <canvas id="oscilloscope" width="800" height="300"></canvas>
+            </div>
+            <p style="text-align: center; margin-top: 10px; color: #666;">
+                Зелена лінія - вихідна напруга ШІП, Синя лінія - струм якоря
+            </p>
+        </div>
+
+        <!-- Результати вимірювань -->
+        <div class="lab-section">
+            <h2 class="section-title">📈 Результати вимірювань</h2>
+            
+            <div class="results-grid">
+                <div class="result-card">
+                    <h3>Швидкість обертання</h3>
+                    <div class="value" id="speedResult">1450</div>
+                    <div class="unit">об/хв</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Струм якоря</h3>
+                    <div class="value" id="currentResult">12.5</div>
+                    <div class="unit">А</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>Вихідна напруга</h3>
+                    <div class="value" id="outputVoltageResult">110</div>
+                    <div class="unit">В</div>
+                </div>
+                
+                <div class="result-card">
+                    <h3>ККД системи</h3>
+                    <div class="value" id="efficiencyResult">87</div>
+                    <div class="unit">%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Характеристики -->
+        <div class="lab-section">
+            <h2 class="section-title">📊 Швидкісні та механічні характеристики</h2>
+            <div class="chart-container">
+                <canvas id="characteristicsChart" width="800" height="350"></canvas>
+            </div>
+        </div>
+
+        <!-- Таблиця даних -->
+        <div class="lab-section">
+            <h2 class="section-title">📋 Експериментальні дані</h2>
+            <table class="data-table" id="dataTable">
+                <thead>
+                    <tr>
+                        <th>№</th>
+                        <th>γ (%)</th>
+                        <th>Uвих (В)</th>
+                        <th>Iя (А)</th>
+                        <th>n (об/хв)</th>
+                        <th>M (Н·м)</th>
+                        <th>ω (рад/с)</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <!-- Дані будуть додаватися автоматично -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Завдання -->
+        <div class="lab-section">
+            <h2 class="section-title">✅ Завдання для виконання</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="control-panel">
+                    <h4>Завдання 1: Швидкісні характеристики</h4>
+                    <p>Змінюйте шпаруватість від 20% до 90% та записуйте дані</p>
+                    <button class="btn" onclick="task1()">Виконати завдання 1</button>
+                </div>
+                
+                <div class="control-panel">
+                    <h4>Завдання 2: Механічні характеристики</h4>
+                    <p>Змінюйте момент навантаження та досліджуйте залежність ω(M)</p>
+                    <button class="btn" onclick="task2()">Виконати завдання 2</button>
+                </div>
+                
+                <div class="control-panel">
+                    <h4>Завдання 3: Аналіз форми сигналу</h4>
+                    <p>Дослідіть форму вихідної напруги для різних γ</p>
+                    <button class="btn" onclick="task3()">Виконати завдання 3</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальні змінні
+        let experimentData = [];
+        let isRunning = false;
+        let animationId = null;
+
+        // Параметри двигуна (типові значення)
+        const motorParams = {
+            Rя: 0.5,      // Опір якоря, Ом
+            kпз: 0.015,   // Коефіцієнт послідовного збудження
+            kзал: 50,     // Залишковий коефіцієнт
+            Iн: 20,       // Номінальний струм, А
+            nн: 1500      // Номінальна швидкість, об/хв
+        };
+
+        // Ініціалізація
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDisplayValues();
+            drawOscilloscope();
+            drawCharacteristics();
+            
+            // Додаємо обробники подій для слайдерів
+            document.getElementById('voltage').addEventListener('input', updateAll);
+            document.getElementById('dutyCycle').addEventListener('input', updateAll);
+            document.getElementById('frequency').addEventListener('input', updateAll);
+            document.getElementById('load').addEventListener('input', updateAll);
+        });
+
+        function updateDisplayValues() {
+            const voltage = document.getElementById('voltage').value;
+            const dutyCycle = document.getElementById('dutyCycle').value;
+            const frequency = document.getElementById('frequency').value;
+            const load = document.getElementById('load').value;
+            
+            document.getElementById('voltageValue').textContent = voltage + ' В';
+            document.getElementById('dutyCycleValue').textContent = dutyCycle + '%';
+            document.getElementById('frequencyValue').textContent = frequency + ' кГц';
+            document.getElementById('loadValue').textContent = load + ' Н·м';
+        }
+
+        function calculateMotorParameters() {
+            const Uп = parseFloat(document.getElementById('voltage').value);
+            const γ = parseFloat(document.getElementById('dutyCycle').value) / 100;
+            const M = parseFloat(document.getElementById('load').value);
+            
+            // Розрахунок параметрів двигуна
+            const Uвих = γ * Uп;
+            const Iя = Math.sqrt(M / motorParams.kпз);
+            const ω = (γ * Uп - Iя * motorParams.Rя) / (motorParams.kпз * Iя + motorParams.kзал);
+            const n = ω * 60 / (2 * Math.PI) * 10; // об/хв
+            const efficiency = (M * ω) / (Uвих * Iя) * 100;
+            
+            return {
+                Uвих: Uвих.toFixed(1),
+                Iя: Iя.toFixed(1),
+                n: Math.max(0, n).toFixed(0),
+                ω: Math.max(0, ω).toFixed(2),
+                efficiency: Math.min(100, Math.max(0, efficiency)).toFixed(0),
+                γ: (γ * 100).toFixed(0),
+                M: M
+            };
+        }
+
+        function updateResults() {
+            const params = calculateMotorParameters();
+            
+            document.getElementById('speedResult').textContent = params.n;
+            document.getElementById('currentResult').textContent = params.Iя;
+            document.getElementById('outputVoltageResult').textContent = params.Uвих;
+            document.getElementById('efficiencyResult').textContent = params.efficiency;
+        }
+
+        function updateAll() {
+            updateDisplayValues();
+            updateResults();
+            drawOscilloscope();
+            drawCharacteristics();
+        }
+
+        function drawOscilloscope() {
+            const canvas = document.getElementById('oscilloscope');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Очищення canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Сітка
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < height; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(width, i);
+                ctx.stroke();
+            }
+            
+            const γ = parseFloat(document.getElementById('dutyCycle').value) / 100;
+            const f = parseFloat(document.getElementById('frequency').value);
+            const Uп = parseFloat(document.getElementById('voltage').value);
+            
+            // Періоди для відображення
+            const periods = 3;
+            const samplesPerPeriod = width / periods;
+            
+            // Малювання напруги ШІП (зелена лінія)
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let x = 0; x < width; x++) {
+                const t = (x / width) * periods;
+                const periodPos = (t % 1);
+                let voltage = 0;
+                
+                if (periodPos < γ) {
+                    voltage = Uп;
+                }
+                
+                const y = height - (voltage / Uп) * (height * 0.8) - height * 0.1;
+                
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Малювання струму (синя лінія)
+            const Iя = parseFloat(calculateMotorParameters().Iя);
+            ctx.strokeStyle = '#0088ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (let x = 0; x < width; x++) {
+                const t = (x / width) * periods;
+                const periodPos = (t % 1);
+                let current = 0;
+                
+                if (periodPos < γ) {
+                    // Експоненціальне наростання струму
+                    current = Iя * (1 - Math.exp(-periodPos * 10));
+                } else {
+                    // Експоненціальне спадання струму
+                    current = Iя * Math.exp(-(periodPos - γ) * 5);
+                }
+                
+                const y = height - (current / (Iя * 1.2)) * (height * 0.4) - height * 0.55;
+                
+                if (x === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            // Підписи
+            ctx.fillStyle = '#00ff00';
+            ctx.font = '14px Arial';
+            ctx.fillText('Uвих', 10, 30);
+            
+            ctx.fillStyle = '#0088ff';
+            ctx.fillText('Iя', 10, 50);
+        }
+
+        function drawCharacteristics() {
+            const canvas = document.getElementById('characteristicsChart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Очищення
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Сітка
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < width; i += 80) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < height; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(width, i);
+                ctx.stroke();
+            }
+            
+            // Осі
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(50, height - 50);
+            ctx.lineTo(width - 20, height - 50);
+            ctx.moveTo(50, height - 50);
+            ctx.lineTo(50, 20);
+            ctx.stroke();
+            
+            // Швидкісні характеристики для різних γ
+            const gammaValues = [0.3, 0.5, 0.7, 0.9];
+            const colors = ['#e74c3c', '#f39c12', '#27ae60', '#3498db'];
+            
+            gammaValues.forEach((gamma, index) => {
+                ctx.strokeStyle = colors[index];
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                for (let i = 0; i <= 100; i++) {
+                    const current = i * 0.3; // Струм від 0 до 30А
+                    const Uп = 220;
+                    const speed = Math.max(0, (gamma * Uп - current * motorParams.Rя) / 
+                                          (motorParams.kпз * current + motorParams.kзал)) * 10;
+                    
+                    const x = 50 + (current / 30) * (width - 100);
+                    const y = height - 50 - (speed / 2000) * (height - 100);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                
+                // Підпис
+                ctx.fillStyle = colors[index];
+                ctx.font = '12px Arial';
+                ctx.fillText(`γ = ${(gamma*100).toFixed(0)}%`, width - 100, 30 + index * 20);
+            });
+            
+            // Підписи осей
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.fillText('Струм якоря, А', width/2 - 50, height - 10);
+            ctx.save();
+            ctx.translate(20, height/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('Швидкість, об/хв', -50, 0);
+            ctx.restore();
+        }
+
+        function startExperiment() {
+            if (!isRunning) {
+                isRunning = true;
+                const params = calculateMotorParameters();
+                
+                // Додаємо дані в таблицю
+                experimentData.push(params);
+                updateDataTable();
+                
+                // Анімація
+                document.querySelector('.oscilloscope').classList.add('animated');
+                setTimeout(() => {
+                    document.querySelector('.oscilloscope').classList.remove('animated');
+                }, 2000);
+                
+                setTimeout(() => {
+                    isRunning = false;
+                }, 1000);
+            }
+        }
+
+        function updateDataTable() {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            
+            experimentData.forEach((data, index) => {
+                const row = tbody.insertRow();
+                row.insertCell(0).textContent = index + 1;
+                row.insertCell(1).textContent = data.γ;
+                row.insertCell(2).textContent = data.Uвих;
+                row.insertCell(3).textContent = data.Iя;
+                row.insertCell(4).textContent = data.n;
+                row.insertCell(5).textContent = data.M;
+                row.insertCell(6).textContent = data.ω;
+            });
+        }
+
+        function resetData() {
+            experimentData = [];
+            updateDataTable();
+            alert('Дані скинуто!');
+        }
+
+        function saveData() {
+            if (experimentData.length === 0) {
+                alert('Немає даних для збереження!');
+                return;
+            }
+            
+            let csv = 'N,γ(%),Uвих(В),Iя(А),n(об/хв),M(Н·м),ω(рад/с)\n';
+            experimentData.forEach((data, index) => {
+                csv += `${index + 1},${data.γ},${data.Uвих},${data.Iя},${data.n},${data.M},${data.ω}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'lab_data_PWM.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function task1() {
+            alert('Завдання 1: Змінюйте шпаруватість від 20% до 90% з кроком 10% та записуйте дані для кожного значення');
+        }
+
+        function task2() {
+            alert('Завдання 2: При фіксованій шпаруватості 70% змінюйте момент навантаження від 5 до 40 Н·м');
+        }
+
+        function task3() {
+            alert('Завдання 3: Спостерігайте за формою сигналу на осцилографі для різних значень γ та частоти');
+        }
+
+        // Початкове оновлення
+        updateAll();
+    </script>
 </body>
 </html>
